@@ -8,24 +8,25 @@ interface AuthenticatedRequest extends Request {
 
 export const Authenticate = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization;
-
+    console.log('Authorization header:', authHeader);
+  
     if (!authHeader) {
-        res.status(401).json({ message: "Unauthorized: No token provided" });
-        return;
+      res.status(401).json({ message: "Unauthorized: No token provided" });
+      return;
     }
-
+  
     const token = authHeader.split(" ")[1];
     if (!token) {
-        res.status(401).json({ message: "Unauthorized: Invalid token format" });
-        return;
+      res.status(401).json({ message: "Unauthorized: Invalid token format" });
+      return;
     }
-
+  
     try {
-        const decoded = jwt.verify(token, config.jwtSecret) as { id: number; email: string };
-        req.user = decoded; 
-        next();
+      const decoded = jwt.verify(token, config.jwtSecret) as { id: number; email: string };
+      req.user = decoded;
+      next();
     } catch (error) {
-        res.status(403).json({ message: "Unauthorized: Invalid token" });
-        return;
+      res.status(403).json({ message: "Unauthorized: Invalid token" });
     }
-};
+  };
+  

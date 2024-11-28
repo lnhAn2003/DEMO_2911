@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import UserService from "../services/user.service";
 import logger from "../utils/logger";
 
+interface AuthenticatedRequest extends Request {
+    user: { id: number; email: string };
+}
+
 export class UserController {
     static async getAllUser(req: Request, res: Response): Promise<void> {
         try {
@@ -100,4 +104,22 @@ export class UserController {
             res.status(500).json({ message: 'An error occurred while deleting the user.', error: error.message });
         }
     }
+
+    static async getProfile(req: Request, res: Response): Promise<void> {
+        try {
+          const { id } = (req as AuthenticatedRequest).user;
+          const user = await UserService.getUserById(id);
+      
+          if (!user) {
+            res.status(404).json({ message: "User not found" });
+            logger.error(`User with ID ${id} not found!`);
+          } else {
+            logger.info(`User with ID ${id} fetched successfully!`);
+            res.status(200).json(user);
+          }
+        } catch (error: any) {
+          res.status(500).json({ message: error.message });
+        }
+      }
+      
 }

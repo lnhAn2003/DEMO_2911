@@ -8,6 +8,7 @@ router.post("/register", UserController.register);
 router.post("/login", UserController.login);
 router.get("/list/", UserController.getAllUser);
 router.get("/profile/:id", UserController.getUserById);
+router.get("/profile", Authenticate, UserController.getProfile);
 router.patch("/profile/:id", Authenticate, UserController.updateProfile);
 router.patch("/delete/:id", Authenticate, UserController.deleteUser);
 
