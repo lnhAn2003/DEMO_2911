@@ -1,20 +1,29 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany } from "typeorm";
 import { Task } from "./Task";
+import { ChatRoom } from './ChatRoom';
+import { ChatMessage } from './ChatMessage';
 
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
-    id?: number;
+    id!: number;
 
     @Column()
-    name?: string;
+    name!: string;
 
     @Column()
-    email?: string;
+    email!: string;
 
     @Column()
-    password?: string;
+    password!: string;
+
+
+    @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants)
+    chatRooms!: ChatRoom[];
+
+    @OneToMany(() => ChatMessage, (message) => message.sender)
+    chatMessages!: ChatMessage[];
 
     @OneToMany(() => Task, (task) => task.user)
-    tasks?: Task[];
+    tasks!: Task[];
 }

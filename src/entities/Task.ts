@@ -1,28 +1,26 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from "typeorm";
-import { User
-    
- } from "./User";
+import { User } from "./User";
 @Entity()
 export class Task {
     @PrimaryGeneratedColumn()
-    id?: number;
+    id!: number;
 
     @Column()
-    title?: string;
+    title!: string;
 
     @Column({ nullable: true })
-    description?: string;
+    description!: string;
 
     @Column({ default: false })
-    isCompleted?: boolean;
+    isCompleted!: boolean;
 
     @CreateDateColumn()
-    createdAt?: Date;
+    createdAt!: Date;
 
     @UpdateDateColumn()
-    updatedAt?: Date;
+    updatedAt!: Date;
 
     @ManyToOne(() => User, (user) => user.tasks, { nullable: false })
     @JoinColumn({ name: "userId" })
-    user?: User;
+    user!: User;
 }
