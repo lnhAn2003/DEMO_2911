@@ -10,7 +10,7 @@ export class ChatRoom {
     @Column({ unique: true })
     name!: string;
 
-    @ManyToMany(() => User, (user) => user.chatRooms, { eager: true })
+    @ManyToMany(() => User, (user) => user.chatRooms)
     @JoinTable({
         name: 'chatroom_users',
         joinColumn: { name: 'chatroom_id', referencedColumnName: 'id' },

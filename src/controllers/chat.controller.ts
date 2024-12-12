@@ -3,7 +3,7 @@ import logger from "../utils/logger";
 import ChatService from "../services/chat.service";
 
 interface AuthenticatedRequest extends Request {
-    user: { id: number; email: string };
+    user: { id: number; name: string, email: string };
 }
 
 class ChatController {
@@ -28,7 +28,7 @@ class ChatController {
             const { id } = req.params;
             const userId = parseInt(id, 10);
             const userChatRoom = await ChatService.getChatRoomsForUser(userId);
-            logger.info("Get new chat room based on user id.");
+            logger.info("Get chat room based on user id.");
             res.status(201).json(userChatRoom);
         } catch (error: any) {
             res.status(400).json({ message: error.message });
@@ -47,13 +47,39 @@ class ChatController {
         }
     }
 
+    static async getMessage(req: Request, res: Response): Promise<void> {
+        try {
+            const { chatRoomId, messageId } = req.params;
+            const parsedChatRoomId = parseInt(chatRoomId, 10);
+            const parsedMessageId = parseInt(messageId, 10);
+
+            if (isNaN(parsedChatRoomId) || isNaN(parsedMessageId)) {
+                res.status(400).json({ message: "Invalid chat room ID or message ID." });
+                return;
+            }
+
+            const message = await ChatService.getMessage(parsedChatRoomId, parsedMessageId);
+
+            if (!message) {
+                res.status(404).json({ message: "Message not found." });
+                return;
+            }
+
+            logger.info(`Fetched message ID ${parsedMessageId} from chat room ID ${parsedChatRoomId}.`);
+            res.status(200).json(message);
+        } catch (error: any) {
+            logger.error(`Error fetching message: ${error.message}`);
+            res.status(500).json({ message: "Internal server error." });
+        }
+    }
+
     static async sendMessage(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;
             const chatRoomId = parseInt(id, 10);
             const { id: senderId } = (req as AuthenticatedRequest).user;
             const { content } = req.body;
-            const sendMessage = await ChatService.sendMessage(chatRoomId, senderId, content)
+            const sendMessage = await ChatService.sendMessage({chatRoomId, senderId, content})
             logger.info("Send message from user.");
             res.status(201).json(sendMessage);
         } catch (error: any) {

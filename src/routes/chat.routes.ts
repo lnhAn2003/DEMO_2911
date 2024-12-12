@@ -4,9 +4,10 @@ import ChatController from "../controllers/chat.controller";
 
 const router = Router();
 
-router.post("/", Authenticate, ChatController.createChatRoom);
-router.get("/user/:id", Authenticate, ChatController.getChatRoomsForUser);
-router.get("/:id", Authenticate, ChatController.getMessages);
+router.post("/", ChatController.createChatRoom);
+router.get("/user/:id", ChatController.getChatRoomsForUser);
+router.get("/:id", ChatController.getMessages);
 router.patch("/:id", Authenticate, ChatController.sendMessage);
+router.get("/:chatRoomId/messages/:messageId", Authenticate, ChatController.getMessage);
 
 export default router;

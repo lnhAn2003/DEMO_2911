@@ -25,7 +25,7 @@ const RegisterPage: React.FC = () => {
   const onSubmit = async (data: RegisterInput) => {
     setServerError(null);
     try {
-      await registerUser(data.username, data.email, data.password);
+      await registerUser(data.name, data.email, data.password);
     } catch (error: any) {
       setServerError(error.message);
     }
@@ -44,15 +44,15 @@ const RegisterPage: React.FC = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <input
-              {...register('username')}
+              {...register('name')}
               placeholder="Username"
               className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.username ? 'border-red-500' : 'border-gray-300'
+                errors.name ? 'border-red-500' : 'border-gray-300'
               }`}
               required
             />
-            {errors.username && (
-              <p className="text-red-500 mt-1">{errors.username.message}</p>
+            {errors.name && (
+              <p className="text-red-500 mt-1">{errors.name.message}</p>
             )}
           </div>
 

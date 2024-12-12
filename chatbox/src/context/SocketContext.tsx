@@ -1,34 +1,51 @@
+// src/context/SocketContext.tsx
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
-import useAuth from '../hooks/useAuth';
+import { AuthContext } from './AuthContext'; // Adjust the import path as needed
 
 interface SocketContextType {
-  socket: Socket | null;
+    socket: Socket | null;
 }
 
 const SocketContext = createContext<SocketContextType>({ socket: null });
 
 export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { token } = useAuth();
-  const [socket, setSocket] = useState<Socket | null>(null);
+    const auth = useContext(AuthContext);
+    const [socket, setSocket] = useState<Socket | null>(null);
 
-  useEffect(() => {
-    if (!token) return;
-  
-    const newSocket = io('http://localhost:4000', {
-      auth: {
-        token: token,
-      },
-    });
-  
-    setSocket(newSocket);
-  
-    return () => {
-      newSocket.close();
-    };
-  }, [token]);
+    useEffect(() => {
+        const token = auth?.token || localStorage.getItem('token');
+        console.log('SocketContext: Retrieved token:', token); // Debugging log
 
-  return <SocketContext.Provider value={{ socket }}>{children}</SocketContext.Provider>;
+        if (!token) {
+            console.warn('Socket not initialized: Token missing');
+            return;
+        }
+
+        const newSocket = io('http://localhost:4000', {
+            auth: {
+                token: token,
+            },
+            transports: ['websocket', 'polling'],
+            withCredentials: true,
+        });
+
+        newSocket.on('connect', () => {
+            console.log('Socket connected successfully');
+        });
+
+        newSocket.on('connect_error', (err) => {
+            console.error('Socket connection error:', err.message);
+        });
+
+        setSocket(newSocket);
+
+        return () => {
+            newSocket.disconnect();
+        };
+    }, [auth?.token]);
+
+    return <SocketContext.Provider value={{ socket }}>{children}</SocketContext.Provider>;
 };
 
 export const useSocketContext = () => useContext(SocketContext);

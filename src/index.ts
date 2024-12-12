@@ -1,6 +1,6 @@
-import "reflect-metadata";
+import "reflect-metadata"; //decorator assisstant for TypeOrm
 import express from "express";
-import cors from "cors"; // Import cors
+import cors from "cors";
 import { AppDataSource, config } from "./data-source";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
@@ -11,21 +11,20 @@ import TaskRouter from "./routes/task.routes";
 import ChatRouter from "./routes/chat.routes";
 import jwt from "jsonwebtoken";
 import { User } from "./entities/User";
+import { ChatRoom } from "./entities/ChatRoom";
 
 const app = express();
 
-// CORS configuration
-const allowedOrigins = ["http://localhost:3000"]; // Update this with your client origin(s)
+const allowedOrigins = ["http://localhost:3000"];
 const corsOptions = {
   origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  credentials: true, // Allow credentials (e.g., cookies, authorization headers)
+  credentials: true,
 };
-app.use(cors(corsOptions)); // Apply CORS middleware
 
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// Global error handling for unhandled rejections and exceptions
 process.on("unhandledRejection", (reason, promise) => {
   logger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
 });
@@ -42,17 +41,23 @@ const io = new Server(httpServer, {
     methods: ["GET", "POST"],
     credentials: true,
   },
+  pingTimeout: 60000, 
+  pingInterval: 30000,
+  transports: ['websocket', 'polling'],
 });
 app.set("io", io);
 
 io.use(async (socket: Socket, next) => {
   try {
     const token = socket.handshake.auth.token;
+    logger.info(`Received token: ${token}`);
     if (!token) {
-      return next(new Error("Authentication error"));
+      return next(new Error("Authentication error: Token missing"));
     }
 
     const decoded = jwt.verify(token, config.jwtSecret) as { id: number; email: string };
+    logger.info(`Decoded token: ${decoded}`);
+
     const userRepository = AppDataSource.getRepository(User);
     const user = await userRepository.findOne({
       where: { id: decoded.id },
@@ -65,7 +70,8 @@ io.use(async (socket: Socket, next) => {
 
     (socket as any).user = user;
     next();
-  } catch (err) {
+  } catch (err: any) {
+    console.error('WebSocket Authentication error:', err.message);
     next(new Error("Authentication error"));
   }
 });
@@ -77,7 +83,7 @@ io.on("connection", (socket) => {
   socket.join(`user_${user.id}`);
   logger.info(`User ${user.email} joined their personal room: user_${user.id}`);
 
-  user.chatRooms.forEach((chatRoom) => {
+  user.chatRooms.forEach((chatRoom: ChatRoom) => {
     socket.join(`chatroom_${chatRoom.id}`);
     logger.info(`User ${user.email} joined chat room: chatroom_${chatRoom.id}`);
   });
@@ -97,6 +103,11 @@ io.on("connection", (socket) => {
       logger.error(`Error sending message: ${error.message}`);
       socket.emit("error", { message: error.message });
     }
+  });
+
+  socket.on("ping", () => {
+    console.log("Ping received, sending pong");
+    socket.emit("pong");
   });
 
   socket.on("disconnect", () => {
