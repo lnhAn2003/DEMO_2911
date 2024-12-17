@@ -19,12 +19,12 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true); 
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
   useEffect(() => {
     const storedToken = Cookies.get('token');
-  
+
     if (storedToken) {
       setToken(storedToken);
 
@@ -50,19 +50,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         password,
       });
       const { token, user } = response.data;
-  
+
       Cookies.set('token', token, { expires: 1 });
       setToken(token);
       setUser(user);
-  
+
       axiosInstance.defaults.headers['Authorization'] = `Bearer ${token}`;
 
-      router.push('/dashboard');
+      router.push('/profile');
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed';
       throw new Error(message);
     }
   };
+
 
   const register = async (name: string, email: string, password: string) => {
     try {
@@ -78,7 +79,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     Cookies.remove('token');
     setToken(null);
     setUser(null);
-    
+
     delete axiosInstance.defaults.headers['Authorization'];
 
     router.push('/login');

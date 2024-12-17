@@ -78,6 +78,18 @@ class UserService {
         return updatedUser; 
     }
 
+    // public static async updateUserAvatar(id: number, imageUrl: string): Promise<User> {
+    //     const user = await userRepository.findOne({ where: { id } });
+    //     if (!user) {
+    //         throw new Error("User not found");
+    //     }
+
+    //     user.profileImageUrl = imageUrl;
+    //     await userRepository.save(user);
+
+    //     return user;
+    // }
+
     public static async deleteUser(id: number): Promise<User> {
         const userToDelete = await userRepository.findOne({ where: { id } });
         if (!userToDelete) {
