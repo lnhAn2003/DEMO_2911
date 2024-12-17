@@ -4,7 +4,7 @@ import logger from "../utils/logger";
 import ChatService from "../services/chat.service";
 
 interface AuthenticatedRequest extends Request {
-    user: { id: number; name: string, email: string };
+    user: { id: number; name: string; email: string };
 }
 
 class ChatController {
@@ -35,9 +35,9 @@ class ChatController {
                 return;
             }
 
-            const userChatRoom = await ChatService.getChatRoomsForUser(userId);
+            const userChatRooms = await ChatService.getChatRoomsForUser(userId);
             logger.info(`Fetched chat rooms for user ID ${userId}`);
-            res.status(200).json(userChatRoom);
+            res.status(200).json(userChatRooms);
         } catch (error: any) {
             logger.error(`Error fetching chat rooms: ${error.message}`);
             res.status(500).json({ message: error.message });
@@ -53,12 +53,12 @@ class ChatController {
                 return;
             }
 
-            const getMessages = await ChatService.getMessages(chatRoomId);
+            const messages = await ChatService.getMessages(chatRoomId);
             logger.info(`Fetched messages for chat room ID ${chatRoomId}`);
-            res.status(200).json(getMessages);
+            res.status(200).json(messages);
         } catch (error: any) {
             logger.error(`Error fetching messages: ${error.message}`);
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: "Internal server error." });
         }
     }
 
@@ -90,43 +90,49 @@ class ChatController {
 
     static async sendMessage(req: Request, res: Response): Promise<void> {
         try {
-          const { id } = req.params;
-          const chatRoomId = parseInt(id, 10);
-          if (isNaN(chatRoomId)) {
-            res.status(400).json({ message: "Invalid chat room ID" });
-            return;
-          }
-    
-          const { id: senderId } = (req as AuthenticatedRequest).user;
-          const { content } = req.body;
-    
-          // Extract uploaded files from req.files
-          const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
-          let imagesURL: string[] | undefined;
-          let fileURL: string | undefined;
-    
-          if (files && files.images) {
-            imagesURL = files.images.map(img => img.location);
-          }
-    
-          if (files && files.file && files.file.length > 0) {
-            fileURL = files.file[0].location;
-          }
-    
-          const sendMessage = await ChatService.sendMessage({ 
-            chatRoomId, 
-            senderId, 
-            content, 
-            imagesURL, 
-            fileURL 
-          });
-          logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
-          res.status(201).json(sendMessage);
+            const { id } = req.params;
+            const chatRoomId = parseInt(id, 10);
+            if (isNaN(chatRoomId)) {
+                res.status(400).json({ message: "Invalid chat room ID" });
+                return;
+            }
+
+            const { id: senderId } = (req as AuthenticatedRequest).user;
+            const { content } = req.body;
+
+            // Files from S3 upload
+            const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
+            let imagesURL: string[] | undefined;
+            let fileURL: string | undefined;
+
+            if (files && files.images) {
+                imagesURL = files.images.map((img) => img.location);
+            }
+
+            if (files && files.file && files.file.length > 0) {
+                fileURL = files.file[0].location;
+            }
+
+            const message = await ChatService.sendMessage({
+                chatRoomId,
+                senderId,
+                content,
+                imagesURL,
+                fileURL,
+            });
+
+            logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
+
+            // Emit 'newMessage' via Socket.io
+            const io = req.app.get("io");
+            io.to(`chatroom_${chatRoomId}`).emit("newMessage", message);
+
+            res.status(201).json(message);
         } catch (error: any) {
-          logger.error(`Error sending message: ${error.message}`);
-          res.status(500).json({ message: error.message });
+            logger.error(`Error sending message: ${error.message}`);
+            res.status(500).json({ message: error.message });
         }
-      }    
+    }
 }
 
 export default ChatController;

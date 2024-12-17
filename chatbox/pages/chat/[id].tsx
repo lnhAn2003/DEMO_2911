@@ -1,5 +1,3 @@
-// pages/chats/[id].tsx
-
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import ChatMessageComponent from '../../src/components/ChatMessage';
@@ -40,6 +38,7 @@ const ChatRoomPage = () => {
             try {
                 const data = await fetchChatRoom(id);
                 if (data) {
+                    // data is assumed to be the messages since your code indicates that.
                     setMessages(data);
                     setChatRoom({
                         id: parseInt(id, 10),
@@ -110,9 +109,14 @@ const ChatRoomPage = () => {
                 formData.append('file', file);
             }
 
-            const response = await axiosInstance.post(`/chats/${id}/messages`, formData);
-            const newSentMessage = response.data as ChatMessage;
-            setMessages((prev) => [...prev, newSentMessage]);
+            const response = await axiosInstance.post(`/chats/${id}/messages`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            
+            // const newSentMessage = response.data as ChatMessage;
+            // setMessages((prev) => [...prev, newSentMessage]);
 
             setNewMessage('');
             setImages([]);
@@ -286,7 +290,6 @@ const ChatRoomPage = () => {
                             title="Attach Images"
                         >
                             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              {/* Camera icon */}
                               <path strokeLinecap="round" strokeLinejoin="round" d="M3 7h2l2-2h10l2 2h2m-2 0h-4.5M12 5v.01M5 7h2m12 0h2M5 7l.01 10M19 7l-.01 10M5 17h14m-7-4.5a2 2 0 100-4 2 2 0 000 4z" />
                             </svg>
                         </button>
@@ -298,7 +301,6 @@ const ChatRoomPage = () => {
                             title="Attach File"
                         >
                             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              {/* Paperclip icon */}
                               <path strokeLinecap="round" strokeLinejoin="round" d="M21.44 10.29l-7.07 7.07a5.5 5.5 0 01-7.78 0L4.71 14.4a5.5 5.5 0 010-7.78L11.78.64a5.5 5.5 0 017.78 7.78l-6.36 6.36" />
                             </svg>
                         </button>

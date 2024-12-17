@@ -1,4 +1,5 @@
 // src/SocketIO.ts
+
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
@@ -8,7 +9,7 @@ import { User } from "./entities/User";
 import { ChatRoom } from "./entities/ChatRoom";
 
 export function initializeSocketIO(httpServer: HttpServer) {
-    const allowedOrigins = ["http://localhost:3000"];
+    const allowedOrigins = ["http://localhost:3000"]; // Update as needed
     const io = new Server(httpServer, {
         cors: {
             origin: allowedOrigins,
@@ -20,7 +21,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
         transports: ['websocket', 'polling'],
     });
 
-    // Authentication Middleware
+    // Middleware for authentication
     io.use(async (socket: Socket, next) => {
         try {
             const token = socket.handshake.auth.token;
@@ -64,49 +65,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
             logger.info(`User ${user.email} joined chat room: chatroom_${chatRoom.id}`);
         });
 
-        // Handle send message event
-        socket.on("sendMessage", async (data: { chatRoomId: number; content: string }) => {
-            try {
-                const ChatService = require("./services/chat.service").default;
-                const NotificationService = require("./services/notification.service").default;
 
-                const message = await ChatService.sendMessage({
-                    chatRoomId: data.chatRoomId,
-                    senderId: user.id,
-                    content: data.content,
-                });
-
-                io.to(`chatroom_${data.chatRoomId}`).emit("newMessage", message);
-                logger.info(`Message sent in chat room ${data.chatRoomId} by ${user.email}`);
-
-                // Send notification to other participants
-                const chatRoomRepository = AppDataSource.getRepository(ChatRoom);
-                const chatRoom = await chatRoomRepository.findOne({
-                    where: { id: data.chatRoomId },
-                    relations: ["participants"],
-                });
-
-                if (chatRoom) {
-                    for (const participant of chatRoom.participants) {
-                        if (participant.id !== user.id) {
-                            const notification = await NotificationService.createNotification(
-                                participant.id,
-                                "NEW_MESSAGE",
-                                user.id,
-                                `New message in ${chatRoom.name}`,
-                                chatRoom.id
-                            );
-                            io.to(`user_${participant.id}`).emit("newNotification", notification);
-                        }
-                    }
-                }
-            } catch (error: any) {
-                logger.error(`Error sending message: ${error.message}`);
-                socket.emit("error", { message: error.message });
-            }
-        });
-
-        // Friend Request Event Example
         socket.on("sendFriendRequest", async (data: { receiverId: number }) => {
             try {
                 const FriendService = require("./services/friend.service").default;

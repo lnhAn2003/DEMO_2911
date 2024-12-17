@@ -46,19 +46,26 @@ const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Left Side: Logo and Navigation */}
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <Link
               className="flex-shrink-0 text-2xl font-bold text-blue-600"
               href="/"
             >
               ChatBox
             </Link>
-            <div className="hidden sm:flex sm:ml-6 sm:space-x-8">
+            <div className="hidden sm:flex sm:space-x-8">
               <Link
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-blue-600"
                 href="/dashboard"
               >
                 Dashboard
+              </Link>
+              {/* New Friends Link */}
+              <Link
+                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-blue-600"
+                href="/friend"
+              >
+                Friends
               </Link>
             </div>
           </div>

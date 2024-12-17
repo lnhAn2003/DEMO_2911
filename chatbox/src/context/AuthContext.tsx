@@ -1,5 +1,4 @@
 // src/context/AuthContext.tsx
-
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import axiosInstance from '../utils/axiosInstance';
 import { useRouter } from 'next/router';

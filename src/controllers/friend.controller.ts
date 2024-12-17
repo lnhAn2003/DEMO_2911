@@ -8,6 +8,10 @@ interface AuthenticatedRequest extends Request {
 }
 
 class FriendController {
+    /**
+     * Handles sending a friend request.
+     * Route: POST /friends/request
+     */
     static async sendFriendRequest(req: Request, res: Response): Promise<void> {
         try {
             const { id: requesterId } = (req as AuthenticatedRequest).user;
@@ -23,10 +27,24 @@ class FriendController {
             res.status(201).json(friendRequest);
         } catch (error: any) {
             logger.error(`Error sending friend request: ${error.message}`);
-            res.status(500).json({ message: error.message });
+
+            // Determine error type to send appropriate status code
+            if (error.message.includes("cannot send a friend request to yourself")) {
+                res.status(400).json({ message: error.message });
+            } else if (error.message.includes("already")) {
+                res.status(400).json({ message: error.message });
+            } else if (error.message.includes("not found")) {
+                res.status(404).json({ message: error.message });
+            } else {
+                res.status(500).json({ message: "Internal server error." });
+            }
         }
     }
 
+    /**
+     * Handles accepting a friend request.
+     * Route: POST /friends/:friendRequestId/accept
+     */
     static async acceptFriendRequest(req: Request, res: Response): Promise<void> {
         try {
             const { friendRequestId } = req.params;
@@ -36,15 +54,19 @@ class FriendController {
                 return;
             }
 
-            const acceptedRequest = await FriendService.acceptFriendRequest(requestId);
-            logger.info(`Friend request ID ${requestId} accepted.`);
-            res.status(200).json(acceptedRequest);
+            const { friend, chatRoom } = await FriendService.acceptFriendRequest(requestId);
+            logger.info(`Friend request ID ${requestId} accepted. Direct chat room ID ${chatRoom.id} created.`);
+            res.status(200).json({ friend, chatRoom });
         } catch (error: any) {
             logger.error(`Error accepting friend request: ${error.message}`);
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: "Internal server error." });
         }
     }
 
+    /**
+     * Handles declining a friend request.
+     * Route: POST /friends/:friendRequestId/decline
+     */
     static async declineFriendRequest(req: Request, res: Response): Promise<void> {
         try {
             const { friendRequestId } = req.params;
@@ -59,10 +81,14 @@ class FriendController {
             res.status(200).json(declinedRequest);
         } catch (error: any) {
             logger.error(`Error declining friend request: ${error.message}`);
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: "Internal server error." });
         }
     }
 
+    /**
+     * Handles blocking a user.
+     * Route: POST /friends/block
+     */
     static async blockUser(req: Request, res: Response): Promise<void> {
         try {
             const { id: requesterId } = (req as AuthenticatedRequest).user;
@@ -77,10 +103,14 @@ class FriendController {
             res.status(200).json(blocked);
         } catch (error: any) {
             logger.error(`Error blocking user: ${error.message}`);
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: "Internal server error." });
         }
     }
 
+    /**
+     * Retrieves the list of friends for the authenticated user.
+     * Route: GET /friends/
+     */
     static async getFriends(req: Request, res: Response): Promise<void> {
         try {
             const { id: userId } = (req as AuthenticatedRequest).user;
@@ -89,7 +119,23 @@ class FriendController {
             res.status(200).json(friends);
         } catch (error: any) {
             logger.error(`Error fetching friends: ${error.message}`);
-            res.status(500).json({ message: error.message });
+            res.status(500).json({ message: "Internal server error." });
+        }
+    }
+
+    /**
+     * Retrieves received friend requests for the authenticated user.
+     * Route: GET /friends/received
+     */
+    static async getReceivedFriendRequests(req: Request, res: Response): Promise<void> {
+        try {
+            const { id: userId } = (req as AuthenticatedRequest).user;
+            const receivedRequests = await FriendService.getReceivedFriendRequests(userId);
+            logger.info(`Fetched received friend requests for user ID ${userId}`);
+            res.status(200).json(receivedRequests);
+        } catch (error: any) {
+            logger.error(`Error fetching received friend requests: ${error.message}`);
+            res.status(500).json({ message: "Internal server error." });
         }
     }
 }

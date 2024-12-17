@@ -35,7 +35,7 @@ export interface ChatMessage {
   imagesURL?: string[];
   fileURL?: string;
   sender: Sender;
-  chatRoom?: ChatRoom;
+  chatRoom: ChatRoom;
   createdAt: string;
   updatedAt: string;
 }

@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTabl
 import { ChatRoom } from './ChatRoom';
 import { ChatMessage } from './ChatMessage';
 import { Friend } from "./Friend";
+import { Notification } from "./Notification";
 
 @Entity()
 export class User {
@@ -27,12 +28,6 @@ export class User {
     @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants, {
         eager: true,
     })
-
-    @JoinTable({
-        name: "chatroom_users",
-        joinColumn: { name: "user_id", referencedColumnName: "id" },
-        inverseJoinColumn: { name: "chatroom_id", referencedColumnName: "id" },
-    })
     chatRooms!: ChatRoom[];
 
     @OneToMany(() => ChatMessage, (message) => message.sender)
@@ -43,4 +38,8 @@ export class User {
 
     @OneToMany(() => Friend, (friend) => friend.receiver)
     receivedFriendRequests!: Friend[];
+
+
+    @OneToMany(() => Notification, (notification) => notification.receiver)
+    notifications!: Notification[];
 }

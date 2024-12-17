@@ -12,6 +12,5 @@ router.post("/:id/messages", Authenticate, uploadChatFiles, ChatController.sendM
 router.get("/user/:id", Authenticate, ChatController.getChatRoomsForUser);
 router.get("/:id/messages", Authenticate, ChatController.getMessages);
 router.get("/:chatRoomId/messages/:messageId", Authenticate, ChatController.getMessage);
-router.post("/:id/messages", Authenticate, ChatController.sendMessage);
 
 export default router;

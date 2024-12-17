@@ -9,6 +9,7 @@ router.post("/request", Authenticate, FriendController.sendFriendRequest);
 router.post("/:friendRequestId/accept", Authenticate, FriendController.acceptFriendRequest);
 router.post("/:friendRequestId/decline", Authenticate, FriendController.declineFriendRequest);
 router.post("/block", Authenticate, FriendController.blockUser);
-router.get("/", FriendController.getFriends); 
+router.get("/", Authenticate, FriendController.getFriends);
+router.get("/received", Authenticate, FriendController.getReceivedFriendRequests); 
 
 export default router;
