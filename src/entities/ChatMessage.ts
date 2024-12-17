@@ -1,3 +1,4 @@
+// src/entities/ChatMessage.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from "typeorm";
 import { User } from "./User";
 import { ChatRoom } from "./ChatRoom";
@@ -9,6 +10,12 @@ export class ChatMessage {
 
     @Column()
     content!: string;
+
+    @Column({ nullable: true })
+    imageURL?: string;
+
+    @Column({ nullable: true })
+    fileURL?: string;
 
     @ManyToOne(() => User, (user) => user.chatMessages, { eager: true })
     @JoinColumn({ name: 'sender_id' })

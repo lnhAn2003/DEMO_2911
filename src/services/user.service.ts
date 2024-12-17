@@ -1,3 +1,4 @@
+// src/services/user.service.ts
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { AppDataSource, config } from "../data-source";
@@ -10,11 +11,18 @@ class UserService {
         return await userRepository.find();
     }
 
-    public static async getUserById(id: number): Promise<User | null> {
-        return await userRepository.findOneOrFail({ where: { id }});
+    public static async getUserById(id: number): Promise<User> {
+        const user = await userRepository.findOne({ where: { id }});
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
     }
 
     public static async register(userData: Partial<User>): Promise<User> {
+        if (!userData.email) {
+            throw new Error("Email is required");
+        }
         const existingUser = await userRepository.findOne({ where: { email: userData.email } });
         if (existingUser) {
             throw new Error("Email already in use");
@@ -24,12 +32,12 @@ class UserService {
             userData.password = await bcrypt.hash(userData.password, 10);
         }
 
-        return await userRepository.save(userData);
+        const newUser = userRepository.create(userData);
+        return await userRepository.save(newUser);
     }
 
     public static async login(email: string, password: string): Promise<{ user: User, token: string }> { 
         const user = await userRepository.findOne({ where: { email } }); 
-        
         if (!user || !user.password) { 
             throw new Error('Invalid email or password'); 
         } 
@@ -44,29 +52,39 @@ class UserService {
         }
 
         const token = jwt.sign(
-            { id: user.id},
+            { id: user.id },
             config.jwtSecret,
             { expiresIn: '1h' }
-          );
+        );
+
         return { user, token }; 
     }
 
-    public static async updateProfile(id: number, userData: Partial<User>): Promise<User | null> {
+    public static async updateProfile(id: number, userData: Partial<User>): Promise<User> {
         const user = await userRepository.findOne({ where: { id } }); 
-        
+        if (!user) {
+            throw new Error("User not found");
+        }
+
         if (userData.password) {
             userData.password = await bcrypt.hash(userData.password, 10);
         }
 
         await userRepository.update(id, userData);
-        const updateUser = await userRepository.findOne({ where: {id}});
-        return updateUser; 
+        const updatedUser = await userRepository.findOne({ where: { id } });
+        if (!updatedUser) {
+            throw new Error("User not found after update");
+        }
+        return updatedUser; 
     }
 
-    public static async deleteUser(id: number): Promise<User | null> {
-        const userTodelete = await userRepository.findOne({ where: {id} });
+    public static async deleteUser(id: number): Promise<User> {
+        const userToDelete = await userRepository.findOne({ where: { id } });
+        if (!userToDelete) {
+            throw new Error("User not found");
+        }
         await userRepository.delete(id);
-        return userTodelete;
+        return userToDelete;
     }
 
 }

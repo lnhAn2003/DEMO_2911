@@ -6,21 +6,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createChatRoomSchema } from '../src/schema/validationSchemas';
 import { z } from 'zod';
 import Link from 'next/link';
+import { ChatRoom } from '../src/types/Entities';
 
 type CreateChatRoomFormData = z.infer<typeof createChatRoomSchema>;
-
-interface ChatRoom {
-  id: string; 
-  name: string;
-  participants: Array<{
-    id: number; 
-    name: string;
-    email: string;
-  }>;
-  messages: any[]; 
-  createdAt: string;
-  updatedAt: string;
-}
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();

@@ -1,7 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from "typeorm";
-import { Task } from "./Task";
+// src/entities/User.ts
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from "typeorm";
 import { ChatRoom } from './ChatRoom';
 import { ChatMessage } from './ChatMessage';
+import { Friend } from "./Friend";
 
 @Entity()
 export class User {
@@ -17,6 +18,11 @@ export class User {
     @Column()
     password!: string;
 
+    @Column({ nullable: true})
+    profileImageUrl?: string;
+
+    @Column({ nullable: true})
+    profileDescription?: string;
 
     @ManyToMany(() => ChatRoom, (chatRoom) => chatRoom.participants, {
         eager: true,
@@ -32,6 +38,9 @@ export class User {
     @OneToMany(() => ChatMessage, (message) => message.sender)
     chatMessages!: ChatMessage[];
 
-    @OneToMany(() => Task, (task) => task.user)
-    tasks!: Task[];
+    @OneToMany(() => Friend, (friend) => friend.requester)
+    sentFriendRequests!: Friend[];
+
+    @OneToMany(() => Friend, (friend) => friend.receiver)
+    receivedFriendRequests!: Friend[];
 }

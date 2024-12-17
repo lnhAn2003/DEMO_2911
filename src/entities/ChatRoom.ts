@@ -1,6 +1,12 @@
+// src/entities/ChatRoom.ts
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToMany, JoinTable, OneToMany } from 'typeorm';
 import { User } from './User';
 import { ChatMessage } from './ChatMessage';
+
+export enum ChatRoomType {
+    DIRECT = "DIRECT",
+    GROUP = "GROUP"
+}
 
 @Entity()
 export class ChatRoom {
@@ -9,6 +15,13 @@ export class ChatRoom {
 
     @Column({ unique: true })
     name!: string;
+
+    @Column({
+        type: "enum",
+        enum: ChatRoomType,
+        default: ChatRoomType.GROUP
+    })
+    type!: ChatRoomType;
 
     @ManyToMany(() => User, (user) => user.chatRooms)
     @JoinTable({

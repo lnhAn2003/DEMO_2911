@@ -1,3 +1,4 @@
+// src/services/chat.service.ts
 import { AppDataSource } from "../data-source";
 import { ChatRoom } from "../entities/ChatRoom";
 import { ChatMessage } from "../entities/ChatMessage";
@@ -16,7 +17,6 @@ interface SendMessageParams {
 
 class ChatService {
     static async createChatRoom(name: string, participantIds: number[]): Promise<ChatRoom> {
-
         const uniqueParticipantIds = Array.from(new Set(participantIds));
 
         const participants = await userRepository.find({
@@ -57,6 +57,7 @@ class ChatService {
             where: { id: chatRoomId },
             relations: ["participants"],
         });
+
         if (!chatRoom) {
             throw new Error("Chat room not found.");
         }
@@ -71,12 +72,11 @@ class ChatService {
             throw new Error("Sender is not a participant of the chat room.");
         }
 
-        const message = new ChatMessage();
-        message.content = content;
-        message.sender = sender;
-        message.chatRoom = chatRoom;
-        message.createdAt = new Date();
-        message.updatedAt = new Date();
+        const message = chatMessageRepository.create({
+            content,
+            sender,
+            chatRoom,
+        });
 
         await chatMessageRepository.save(message);
 
@@ -94,15 +94,13 @@ class ChatService {
 
     static async getMessages(chatRoomId: number): Promise<ChatMessage[]> {
         const messages = await chatMessageRepository
-        .createQueryBuilder("message")
-        .leftJoinAndSelect("message.sender", "sender") 
-        .leftJoinAndSelect("message.chatRoom", "chatRoom")
-        .where("message.chatRoom.id = :chatRoomId", { chatRoomId })
-        .orderBy("message.createdAt", "ASC") 
-        .getMany(); 
+            .createQueryBuilder("message")
+            .leftJoinAndSelect("message.sender", "sender") 
+            .leftJoinAndSelect("message.chatRoom", "chatRoom")
+            .where("message.chatRoom.id = :chatRoomId", { chatRoomId })
+            .orderBy("message.createdAt", "ASC")
+            .getMany(); 
         return messages;
-
-        
     }
 
     static async getMessage(chatRoomId: number, messageId: number): Promise<ChatMessage | null> {
@@ -120,11 +118,7 @@ class ChatService {
             relations: ["sender", "chatRoom"],
         });
 
-        if (!message) {
-            return null;
-        }
-
-        return message;
+        return message || null;
     }
 }
 

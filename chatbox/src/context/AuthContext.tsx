@@ -1,19 +1,16 @@
+// src/context/AuthContext.tsx
+
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import axiosInstance from '../utils/axiosInstance';
 import { useRouter } from 'next/router';
 import Cookies from 'js-cookie';
-
-export interface User {
-    id: number;
-    username: string;
-    email: string;
-  }
+import { User } from '../types/Entities';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -22,6 +19,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); 
   const router = useRouter();
 
   useEffect(() => {
@@ -29,17 +27,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   
     if (storedToken) {
       setToken(storedToken);
-  
+
+      axiosInstance.defaults.headers['Authorization'] = `Bearer ${storedToken}`;
+
       axiosInstance
         .get<User>('/users/profile')
         .then((response) => {
           setUser(response.data);
         })
         .catch(() => {
-          Cookies.remove('token');
-          setToken(null);
-          setUser(null);
-        });
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, []);
 
@@ -55,6 +55,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setToken(token);
       setUser(user);
   
+      axiosInstance.defaults.headers['Authorization'] = `Bearer ${token}`;
+
       router.push('/dashboard');
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed';
@@ -76,9 +78,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     Cookies.remove('token');
     setToken(null);
     setUser(null);
+    
+    delete axiosInstance.defaults.headers['Authorization'];
 
     router.push('/login');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, token, login, register, logout }}>

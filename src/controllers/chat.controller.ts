@@ -1,3 +1,4 @@
+// src/controllers/chat.controller.ts
 import { Request, Response } from "express";
 import logger from "../utils/logger";
 import ChatService from "../services/chat.service";
@@ -13,13 +14,15 @@ class ChatController {
 
             if (!name || !Array.isArray(participantIds)) {
                 res.status(400).json({ message: "Invalid input data" });
+                return;
             }
 
             const chatRoom = await ChatService.createChatRoom(name, participantIds);
             logger.info("Created new chat room.");
             res.status(201).json(chatRoom);
         } catch (error: any) {
-            res.status(400).json({ message: error.message });
+            logger.error(`Error creating chat room: ${error.message}`);
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -27,11 +30,17 @@ class ChatController {
         try {
             const { id } = req.params;
             const userId = parseInt(id, 10);
+            if (isNaN(userId)) {
+                res.status(400).json({ message: "Invalid user ID" });
+                return;
+            }
+
             const userChatRoom = await ChatService.getChatRoomsForUser(userId);
-            logger.info("Get chat room based on user id.");
-            res.status(201).json(userChatRoom);
+            logger.info(`Fetched chat rooms for user ID ${userId}`);
+            res.status(200).json(userChatRoom);
         } catch (error: any) {
-            res.status(400).json({ message: error.message });
+            logger.error(`Error fetching chat rooms: ${error.message}`);
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -39,11 +48,17 @@ class ChatController {
         try {
             const { id } = req.params;
             const chatRoomId = parseInt(id, 10);
+            if (isNaN(chatRoomId)) {
+                res.status(400).json({ message: "Invalid chat room ID" });
+                return;
+            }
+
             const getMessages = await ChatService.getMessages(chatRoomId);
-            logger.info("Get all chat room message.");
-            res.status(201).json(getMessages);
+            logger.info(`Fetched messages for chat room ID ${chatRoomId}`);
+            res.status(200).json(getMessages);
         } catch (error: any) {
-            res.status(400).json({ message: error.message });
+            logger.error(`Error fetching messages: ${error.message}`);
+            res.status(500).json({ message: error.message });
         }
     }
 
@@ -77,17 +92,21 @@ class ChatController {
         try {
             const { id } = req.params;
             const chatRoomId = parseInt(id, 10);
+            if (isNaN(chatRoomId)) {
+                res.status(400).json({ message: "Invalid chat room ID" });
+                return;
+            }
+
             const { id: senderId } = (req as AuthenticatedRequest).user;
             const { content } = req.body;
-            const sendMessage = await ChatService.sendMessage({chatRoomId, senderId, content})
-            logger.info("Send message from user.");
+            const sendMessage = await ChatService.sendMessage({ chatRoomId, senderId, content });
+            logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
             res.status(201).json(sendMessage);
         } catch (error: any) {
-            res.status(400).json({ message: error.message });
+            logger.error(`Error sending message: ${error.message}`);
+            res.status(500).json({ message: error.message });
         }
     }
-
-    
 }
 
 export default ChatController;

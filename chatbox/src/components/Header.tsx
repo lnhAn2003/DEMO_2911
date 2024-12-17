@@ -22,7 +22,7 @@ const Header: React.FC = () => {
                     <div className="flex items-center">
                         {user ? (
                             <div className="flex items-center space-x-4">
-                                <span className="text-gray-700">Hello, {user.username}</span>
+                                <span className="text-gray-700">Hello, {user.name}</span>
                                 <button
                                     onClick={logout}
                                     className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"

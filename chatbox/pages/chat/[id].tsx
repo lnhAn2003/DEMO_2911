@@ -1,50 +1,27 @@
 // src/pages/chats/[id].tsx
+
 import { useRouter } from 'next/router';
 import { useEffect, useState, useRef } from 'react';
 import ChatMessageComponent from '../../src/components/ChatMessage';
 import { useSocketContext } from '../../src/context/SocketContext';
 import { fetchChatRoom } from '../../src/serverside/chatRooms';
 import { fetchChatMessage } from '../../src/serverside/chatMessage';
-
-interface ChatRoom {
-    id: number;
-    name: string;
-    participants: Array<{
-        id: number;
-        name: string;
-        email: string;
-    }>;
-    createdAt: string;
-    updatedAt: string;
-}
-
-interface ChatMessageType {
-    id: number;
-    content: string;
-    sender: {
-        id: number;
-        name: string;
-        email: string;
-    };
-    // chatRoom: ChatRoom;
-    createdAt: string;
-}
+import { ChatMessage, ChatRoom, ChatRoomType } from '../../src/types/Entities'; 
 
 const ChatRoomPage = () => {
     const router = useRouter();
     const { id } = router.query;
     const { socket } = useSocketContext();
+
     const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
-    const [messages, setMessages] = useState<ChatMessageType[]>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [error, setError] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
 
-    const [selectedMessage, setSelectedMessage] = useState<ChatMessageType | null>(null);
-
-    // Fetch messages
     useEffect(() => {
-        const loadMessages = async () => {
+        const loadChatRoom = async () => {
             if (typeof id !== 'string') {
                 console.error('Chat room ID is not a string:', id);
                 setError('Invalid chat room ID.');
@@ -53,61 +30,39 @@ const ChatRoomPage = () => {
 
             try {
                 const data = await fetchChatRoom(id);
-                if (data && Array.isArray(data)) {
-                    console.log("Fetched messages:", data);
+                if (data) {
+                    console.log("Fetched chat room:", data);
                     setMessages(data);
-                    // Optionally, set chatRoom details from another source
-                    if (data.length > 0) {
-                        // If chatRoom details are available elsewhere, set them here
-                        // For example, fetch chatRoom details via another API call
-                        // Or retrieve from a list of chat rooms if available
-                        // setChatRoom(data[0].chatRoom); // Not applicable since chatRoom is not in messages
-                    } else {
-                        console.warn('No messages found for this chat room.');
-                        setChatRoom(null); // Or set a default chatRoom object
-                    }
+
+                    setChatRoom({ id: parseInt(id, 10), name: `Chat Room ${id}`,  type: ChatRoomType.GROUP, participants: [], createdAt: '', updatedAt: '' });
                 } else {
-                    setError('Failed to fetch messages.');
+                    setError('Failed to fetch chat room.');
                 }
             } catch (err: any) {
-                console.error('Error fetching messages:', err);
-                setError('Failed to fetch messages.');
+                console.error('Error fetching chat room:', err);
+                setError('Failed to fetch chat room.');
             }
         };
 
         if (id) {
-            loadMessages();
+            loadChatRoom();
         }
     }, [id]);
 
-    // Listen for new messages
+    // Listen for new messages via Socket.IO
     useEffect(() => {
         if (!id || typeof id !== 'string') return;
 
         if (socket) {
-            const handleNewMessage = (message: ChatMessageType) => {
+            const handleNewMessage = (message: ChatMessage) => {
                 console.log('Received newMessage:', message);
-                // Assume all messages belong to the current chat room
-                setMessages((prev) => {
-                    const messageExists = prev.some((msg) => msg.id === message.id);
-                    if (!messageExists) {
-                        return [...prev, message];
-                    }
-                    return prev;
-                });
-            };
-
-            const handleConnectError = (err: any) => {
-                console.error('Socket connection error:', err.message);
-                setError('Real-time connection failed.');
+                setMessages((prev) => [...prev, message]);
             };
 
             socket.on('newMessage', handleNewMessage);
-            socket.on('connect_error', handleConnectError);
 
             return () => {
                 socket.off('newMessage', handleNewMessage);
-                socket.off('connect_error', handleConnectError);
             };
         }
     }, [id, socket]);
@@ -122,13 +77,13 @@ const ChatRoomPage = () => {
         e.preventDefault();
         if (newMessage.trim() === '') return;
 
-        try {
-            if (typeof id !== 'string') {
-                console.error('Chat room ID is not a string:', id);
-                setError('Invalid chat room ID.');
-                return;
-            }
+        if (typeof id !== 'string') {
+            console.error('Chat room ID is not a string:', id);
+            setError('Invalid chat room ID.');
+            return;
+        }
 
+        try {
             socket?.emit('sendMessage', {
                 chatRoomId: parseInt(id, 10),
                 content: newMessage,
@@ -141,7 +96,7 @@ const ChatRoomPage = () => {
         }
     };
 
-    // Fetch a single message (optional)
+    // Fetch a single message detail
     const handleFetchMessage = async (messageId: number) => {
         if (typeof id !== 'string') {
             console.error('Chat room ID is not a string:', id);
@@ -150,7 +105,6 @@ const ChatRoomPage = () => {
         }
 
         const message = await fetchChatMessage(id, messageId.toString());
-
         if (message) {
             setSelectedMessage(message);
             console.log('Fetched single message:', message);
@@ -159,9 +113,7 @@ const ChatRoomPage = () => {
         }
     };
 
-    const handleCloseMessageDetail = () => {
-        setSelectedMessage(null);
-    };
+    const handleCloseMessageDetail = () => setSelectedMessage(null);
 
     if (error) {
         return (
@@ -179,51 +131,63 @@ const ChatRoomPage = () => {
         );
     }
 
-    if (messages.length === 0 && !chatRoom) {
-        return (
-            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-                <p>No messages found in this chat room.</p>
-            </div>
-        );
-    }
-
     return (
         <div className="flex flex-col h-screen bg-gray-100">
+            {/* Header */}
             <header className="bg-white p-4 shadow">
                 <h2 className="text-2xl font-bold">{chatRoom ? chatRoom.name : 'Chat Room'}</h2>
             </header>
+
+            {/* Messages Section */}
             <main className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-4">
-                    {messages.map((msg) => (
-                        <ChatMessageComponent
-                            key={msg.id}
-                            message={msg}
-                            onClick={() => handleFetchMessage(msg.id)}
-                        />
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
+                {messages.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                        <p className="text-gray-500 text-lg">
+                            This room doesn't have any messages yet. Start the conversation now!
+                        </p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {messages.map((msg) => (
+                            <ChatMessageComponent
+                                key={msg.id}
+                                message={msg}
+                                onClick={() => handleFetchMessage(msg.id)}
+                            />
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+                )}
             </main>
+
+            {/* Footer with Input */}
             <footer className="bg-white p-4 shadow">
-                <form onSubmit={handleSendMessage} className="flex space-x-2">
-                    <input
-                        type="text"
-                        className="flex-1 border px-3 py-2 rounded"
-                        placeholder="Type your message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        required
-                    />
-                    <button
-                        type="submit"
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                    >
-                        Send
-                    </button>
+                <form onSubmit={handleSendMessage} className="flex flex-col space-y-2">
+                    {messages.length === 0 && (
+                        <label className="text-gray-500 text-sm">
+                            Be the first to send a message in this chat room!
+                        </label>
+                    )}
+                    <div className="flex space-x-2">
+                        <input
+                            type="text"
+                            className="flex-1 border px-3 py-2 rounded"
+                            placeholder="Type your message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            required
+                        />
+                        <button
+                            type="submit"
+                            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                        >
+                            Send
+                        </button>
+                    </div>
                 </form>
             </footer>
 
-            {/* Modal to Display Selected Message Details */}
+            {/* Selected Message Modal */}
             {selectedMessage && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
                     <div className="bg-white p-6 rounded shadow-lg w-1/3">
@@ -232,7 +196,7 @@ const ChatRoomPage = () => {
                         <p><strong>Content:</strong> {selectedMessage.content}</p>
                         <p><strong>Sent At:</strong> {new Date(selectedMessage.createdAt).toLocaleString()}</p>
                         <button
-                            onClick={handleCloseMessageDetail}
+                            onClick={() => setSelectedMessage(null)}
                             className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
                         >
                             Close

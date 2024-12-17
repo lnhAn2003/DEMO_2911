@@ -1,7 +1,9 @@
 // src/context/SocketContext.tsx
+
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { AuthContext } from './AuthContext'; // Adjust the import path as needed
+import { AuthContext } from './AuthContext';
+import { ChatMessage } from '../types/Entities';
 
 interface SocketContextType {
     socket: Socket | null;
@@ -14,8 +16,8 @@ export const SocketProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const [socket, setSocket] = useState<Socket | null>(null);
 
     useEffect(() => {
-        const token = auth?.token || localStorage.getItem('token');
-        console.log('SocketContext: Retrieved token:', token); // Debugging log
+        const token = auth?.token;
+        console.log('SocketContext: Retrieved token:', token); 
 
         if (!token) {
             console.warn('Socket not initialized: Token missing');
