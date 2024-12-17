@@ -90,23 +90,43 @@ class ChatController {
 
     static async sendMessage(req: Request, res: Response): Promise<void> {
         try {
-            const { id } = req.params;
-            const chatRoomId = parseInt(id, 10);
-            if (isNaN(chatRoomId)) {
-                res.status(400).json({ message: "Invalid chat room ID" });
-                return;
-            }
-
-            const { id: senderId } = (req as AuthenticatedRequest).user;
-            const { content } = req.body;
-            const sendMessage = await ChatService.sendMessage({ chatRoomId, senderId, content });
-            logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
-            res.status(201).json(sendMessage);
+          const { id } = req.params;
+          const chatRoomId = parseInt(id, 10);
+          if (isNaN(chatRoomId)) {
+            res.status(400).json({ message: "Invalid chat room ID" });
+            return;
+          }
+    
+          const { id: senderId } = (req as AuthenticatedRequest).user;
+          const { content } = req.body;
+    
+          // Extract uploaded files from req.files
+          const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
+          let imagesURL: string[] | undefined;
+          let fileURL: string | undefined;
+    
+          if (files && files.images) {
+            imagesURL = files.images.map(img => img.location);
+          }
+    
+          if (files && files.file && files.file.length > 0) {
+            fileURL = files.file[0].location;
+          }
+    
+          const sendMessage = await ChatService.sendMessage({ 
+            chatRoomId, 
+            senderId, 
+            content, 
+            imagesURL, 
+            fileURL 
+          });
+          logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
+          res.status(201).json(sendMessage);
         } catch (error: any) {
-            logger.error(`Error sending message: ${error.message}`);
-            res.status(500).json({ message: error.message });
+          logger.error(`Error sending message: ${error.message}`);
+          res.status(500).json({ message: error.message });
         }
-    }
+      }    
 }
 
 export default ChatController;

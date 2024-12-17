@@ -23,6 +23,7 @@ export interface ChatRoom {
 }
 
 export interface Sender {
+  profileImageUrl: string;
   id: number;
   name: string;
   email: string;
@@ -31,10 +32,9 @@ export interface Sender {
 export interface ChatMessage {
   id: number;
   content: string;
-  imageURL?: string;
+  imagesURL?: string[];
   fileURL?: string;
   sender: Sender;
-  // Make chatRoom optional if not always returned by the backend
   chatRoom?: ChatRoom;
   createdAt: string;
   updatedAt: string;

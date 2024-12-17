@@ -13,7 +13,9 @@ interface SendMessageParams {
     chatRoomId: number;
     senderId: number;
     content: string;
-}
+    imagesURL?: string[];
+    fileURL?: string;
+  }
 
 class ChatService {
     static async createChatRoom(name: string, participantIds: number[]): Promise<ChatRoom> {
@@ -52,45 +54,47 @@ class ChatService {
         return chatRooms;
     }
 
-    static async sendMessage({ chatRoomId, senderId, content }: SendMessageParams): Promise<ChatMessage> {
+    static async sendMessage({ chatRoomId, senderId, content, imagesURL, fileURL }: SendMessageParams): Promise<ChatMessage> {
         const chatRoom = await chatRoomRepository.findOne({
-            where: { id: chatRoomId },
-            relations: ["participants"],
+          where: { id: chatRoomId },
+          relations: ["participants"],
         });
-
+    
         if (!chatRoom) {
-            throw new Error("Chat room not found.");
+          throw new Error("Chat room not found.");
         }
-
+    
         const sender = await userRepository.findOne({ where: { id: senderId } });
         if (!sender) {
-            throw new Error("Sender not found.");
+          throw new Error("Sender not found.");
         }
-
+    
         const isParticipant = chatRoom.participants.some(participant => participant.id === senderId);
         if (!isParticipant) {
-            throw new Error("Sender is not a participant of the chat room.");
+          throw new Error("Sender is not a participant of the chat room.");
         }
-
+    
         const message = chatMessageRepository.create({
-            content,
-            sender,
-            chatRoom,
+          content,
+          sender,
+          chatRoom,
+          imagesURL,
+          fileURL,
         });
-
+    
         await chatMessageRepository.save(message);
-
+    
         const savedMessage = await chatMessageRepository.findOne({
-            where: { id: message.id },
-            relations: ["sender"],
+          where: { id: message.id },
+          relations: ["sender"],
         });
-
+    
         if (!savedMessage) {
-            throw new Error("Failed to retrieve the saved message.");
+          throw new Error("Failed to retrieve the saved message.");
         }
-
+    
         return savedMessage;
-    }
+      }
 
     static async getMessages(chatRoomId: number): Promise<ChatMessage[]> {
         const messages = await chatMessageRepository

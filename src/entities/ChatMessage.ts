@@ -11,8 +11,8 @@ export class ChatMessage {
     @Column()
     content!: string;
 
-    @Column({ nullable: true })
-    imageURL?: string;
+    @Column("simple-array", { nullable: true })
+    imagesURL?: string[];
 
     @Column({ nullable: true })
     fileURL?: string;
