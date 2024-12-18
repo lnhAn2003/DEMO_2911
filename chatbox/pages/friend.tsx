@@ -5,9 +5,11 @@ import { User, Friend, FriendStatus } from '../src/types/Entities';
 import useAuth from '../src/hooks/useAuth';
 import { toast } from 'react-toastify';
 import UserCard from '../src/components/UserCard';
+import { useSocketContext } from '../src/context/SocketContext';
 
 const FriendPage: React.FC = () => {
   const { user } = useAuth();
+  const { socket } = useSocketContext();
   const [users, setUsers] = useState<User[]>([]);
   const [friends, setFriends] = useState<User[]>([]);
   const [friendRequests, setFriendRequests] = useState<Friend[]>([]);
@@ -19,17 +21,13 @@ const FriendPage: React.FC = () => {
 
     const fetchData = async () => {
       try {
-        // Fetch all users
         const allUsersResponse = await axiosInstance.get<User[]>('/users');
-        // Exclude the authenticated user
         const allUsers = allUsersResponse.data.filter((u) => u.id !== user.id);
         setUsers(allUsers);
 
-        // Fetch current user's friends
         const friendsResponse = await axiosInstance.get<User[]>('/friends');
         setFriends(friendsResponse.data);
 
-        // Fetch current user's received friend requests
         const receivedRequestsResponse = await axiosInstance.get<Friend[]>('/friends/received');
         setFriendRequests(receivedRequestsResponse.data);
       } catch (error: any) {
@@ -53,35 +51,43 @@ const FriendPage: React.FC = () => {
     fetchData();
   }, [user]);
 
-  const sendFriendRequest = async (receiverId: number) => {
-    setActionLoading((prev) => ({ ...prev, [receiverId]: true }));
-    try {
-      await axiosInstance.post('/friends/request', { receiverId });
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('newFriendRequest', (friendRequest: Friend) => {
+      toast.info('You received a new friend request!');
+      setFriendRequests((prev) => [...prev, friendRequest]);
+    });
+
+    socket.on('friendRequestSent', (receiverId: number) => {
       toast.success('Friend request sent!');
-      // Update the UI to reflect the sent request
       setUsers((prevUsers) =>
         prevUsers.map((u) =>
           u.id === receiverId ? { ...u, isRequestSent: true } : u
         )
       );
-    } catch (error: any) {
-      console.error('Error sending friend request:', error);
-      if (error.response) {
-        if (error.response.status === 400) {
-          toast.error(error.response.data.message || 'Bad request.');
-        } else if (error.response.status === 404) {
-          toast.error('User not found.');
-        } else if (error.response.status === 500) {
-          toast.error('Server error. Please try again later.');
-        } else {
-          toast.error(error.response.data.message || 'Failed to send friend request.');
-        }
+    });
+
+    socket.on('error', (error: { message: string }) => {
+      toast.error(error.message || 'An error occurred.');
+    });
+
+    return () => {
+      socket.off('newFriendRequest');
+      socket.off('friendRequestSent');
+      socket.off('error');
+    };
+  }, [socket]);
+
+  const sendFriendRequest = (receiverId: number) => {
+    setActionLoading((prev) => ({ ...prev, [receiverId]: true }));
+    socket?.emit('sendFriendRequest', { receiverId }, (response: { success: boolean; message?: string }) => {
+      if (response.success) {
       } else {
-        toast.error('Network error. Please check your connection.');
+        toast.error(response.message || 'Failed to send friend request.');
       }
-    } finally {
       setActionLoading((prev) => ({ ...prev, [receiverId]: false }));
-    }
+    });
   };
 
   if (loading) {
@@ -147,7 +153,6 @@ const FriendPage: React.FC = () => {
                     try {
                       await axiosInstance.post(`/friends/${fr.id}/accept`);
                       toast.success(`Friend request from ${fr.requester.name} accepted!`);
-                      // Update the local state
                       setFriends((prev) => [...prev, fr.requester]);
                       setFriendRequests((prev) => prev.filter((req) => req.id !== fr.id));
                     } catch (error: any) {
@@ -174,7 +179,6 @@ const FriendPage: React.FC = () => {
                     try {
                       await axiosInstance.post(`/friends/${fr.id}/decline`);
                       toast.info(`Friend request from ${fr.requester.name} declined.`);
-                      // Update the local state
                       setFriendRequests((prev) => prev.filter((req) => req.id !== fr.id));
                     } catch (error: any) {
                       console.error('Error declining friend request:', error);
@@ -203,8 +207,6 @@ const FriendPage: React.FC = () => {
   );
 };
 
-const FriendPageWithProtection: React.FC = () => (
-    <FriendPage />
-);
+const FriendPageWithProtection: React.FC = () => <FriendPage />;
 
 export default FriendPageWithProtection;

@@ -2,32 +2,16 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import useAuth from '../hooks/useAuth';
+import useNotifications from '../hooks/useNotifications';
 import { useRouter } from 'next/router';
+import axiosInstance from '../utils/axiosInstance';
 
 const Header: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
+  const { notifications, isLoading, isError, mutate } = useNotifications();
 
   const avatarSrc = user?.profileImageUrl || '/default-avatar.png';
-
-  // Fake notification data for demonstration
-  const notifications = [
-    {
-      id: 1,
-      message: 'John Doe accepted your friend request.',
-      type: 'FRIEND_REQUEST_ACCEPTED',
-    },
-    {
-      id: 2,
-      message: 'Jane sent you a message.',
-      type: 'NEW_MESSAGE',
-    },
-    {
-      id: 3,
-      message: 'Your friend request to Alice was declined.',
-      type: 'FRIEND_REQUEST_DECLINED',
-    },
-  ];
 
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -39,6 +23,17 @@ const Header: React.FC = () => {
 
   const handleNotificationClick = () => {
     setShowNotifications((prev) => !prev);
+  };
+
+  const unreadCount = notifications?.filter((notif) => !notif.isRead).length || 0;
+
+  const handleMarkAsRead = async (notificationId: number) => {
+    try {
+      await axiosInstance.post(`/notifications/${notificationId}/read`);
+      mutate();
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
   };
 
   return (
@@ -60,7 +55,7 @@ const Header: React.FC = () => {
               >
                 Dashboard
               </Link>
-              {/* New Friends Link */}
+              {/* Friends Link */}
               <Link
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-blue-600"
                 href="/friend"
@@ -96,27 +91,43 @@ const Header: React.FC = () => {
                       11-8 0z"
                     />
                   </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
 
                 {/* Notification Dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-md shadow-lg w-64 py-2 z-50">
-                    <ul className="max-h-60 overflow-auto">
-                      {notifications.map((notif) => (
-                        <li
-                          key={notif.id}
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          {notif.message}
-                        </li>
-                      ))}
-                    </ul>
+                    {isLoading && (
+                      <p className="px-4 py-2 text-sm text-gray-700">Loading...</p>
+                    )}
+                    {isError && (
+                      <p className="px-4 py-2 text-sm text-red-600">Failed to load notifications.</p>
+                    )}
+                    {!isLoading && !isError && notifications && notifications.length > 0 ? (
+                      <ul className="max-h-60 overflow-auto">
+                        {notifications.map((notif) => (
+                          <li
+                            key={notif.id}
+                            className={`px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer ${!notif.isRead ? 'font-semibold bg-gray-50' : ''
+                              }`}
+                            onClick={() => handleMarkAsRead(notif.id)}
+                          >
+                            {notif.message}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      !isLoading && !isError && (
+                        <p className="px-4 py-2 text-sm text-gray-700">No notifications.</p>
+                      )
+                    )}
                     <div className="border-t border-gray-200">
-                      <Link
-                        href="/notifications" 
-                        className="block px-4 py-2 text-sm text-blue-600 hover:underline"
-                      >
-                        Show more
+                      <Link href="/notification/collection" className="text-blue-600 hover:underline">
+                        View All Notifications
                       </Link>
                     </div>
                   </div>

@@ -1,5 +1,4 @@
 // src/SocketIO.ts
-
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
@@ -9,7 +8,7 @@ import { User } from "./entities/User";
 import { ChatRoom } from "./entities/ChatRoom";
 
 export function initializeSocketIO(httpServer: HttpServer) {
-    const allowedOrigins = ["http://localhost:3000"]; // Update as needed
+    const allowedOrigins = ["http://localhost:3000"]; 
     const io = new Server(httpServer, {
         cors: {
             origin: allowedOrigins,
@@ -21,7 +20,6 @@ export function initializeSocketIO(httpServer: HttpServer) {
         transports: ['websocket', 'polling'],
     });
 
-    // Middleware for authentication
     io.use(async (socket: Socket, next) => {
         try {
             const token = socket.handshake.auth.token;
@@ -51,12 +49,10 @@ export function initializeSocketIO(httpServer: HttpServer) {
         }
     });
 
-    // Connection Event
     io.on("connection", (socket) => {
         const user = (socket as any).user as User;
         logger.info(`User connected: ${user.email}`);
 
-        // Join personal room and chat rooms
         socket.join(`user_${user.id}`);
         logger.info(`User ${user.email} joined their personal room: user_${user.id}`);
 
@@ -73,7 +69,6 @@ export function initializeSocketIO(httpServer: HttpServer) {
 
                 const friendRequest = await FriendService.sendFriendRequest(user.id, data.receiverId);
 
-                // Notify the receiver
                 io.to(`user_${data.receiverId}`).emit("newFriendRequest", friendRequest);
 
                 const notification = await NotificationService.createNotification(
@@ -83,15 +78,13 @@ export function initializeSocketIO(httpServer: HttpServer) {
                     `You have a new friend request from ${user.email}`
                 );
 
+                console.log(notification);
+
                 io.to(`user_${data.receiverId}`).emit("newNotification", notification);
             } catch (error: any) {
                 logger.error(`Error sending friend request: ${error.message}`);
                 socket.emit("error", { message: error.message });
             }
-        });
-
-        socket.on("ping", () => {
-            socket.emit("pong");
         });
 
         socket.on("disconnect", () => {

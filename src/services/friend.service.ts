@@ -2,19 +2,13 @@
 import { AppDataSource } from "../data-source";
 import { Friend, FriendStatus } from "../entities/Friend";
 import { User } from "../entities/User";
-import ChatService from "./chat.service"; // Ensure this service exists
+import ChatService from "./chat.service";
 import { Repository } from "typeorm";
 
 const friendRepository: Repository<Friend> = AppDataSource.getRepository(Friend);
 const userRepository: Repository<User> = AppDataSource.getRepository(User);
 
 class FriendService {
-    /**
-     * Sends a friend request from requester to receiver.
-     * @param requesterId - ID of the user sending the request.
-     * @param receiverId - ID of the user receiving the request.
-     * @returns The created Friend entity.
-     */
     static async sendFriendRequest(requesterId: number, receiverId: number): Promise<Friend> {
         if (requesterId === receiverId) {
             throw new Error("You cannot send a friend request to yourself.");
@@ -59,11 +53,6 @@ class FriendService {
         return await friendRepository.save(friendRequest);
     }
 
-    /**
-     * Accepts a friend request.
-     * @param friendRequestId - ID of the friend request to accept.
-     * @returns An object containing the updated Friend entity and the created ChatRoom.
-     */
     static async acceptFriendRequest(friendRequestId: number): Promise<{ friend: Friend; chatRoom: any }> {
         return await AppDataSource.transaction(async (transactionalEntityManager) => {
             const friendRequest = await transactionalEntityManager.findOne(Friend, {
@@ -79,22 +68,15 @@ class FriendService {
                 throw new Error("This request is not pending and cannot be accepted.");
             }
 
-            // Update the status to ACCEPTED
             friendRequest.status = FriendStatus.ACCEPTED;
             const updatedFriendRequest = await transactionalEntityManager.save(friendRequest);
 
-            // Create or retrieve the direct chat room between the two users
             const chatRoom = await ChatService.createOrGetDirectChatRoom(friendRequest.requester.id, friendRequest.receiver.id);
 
             return { friend: updatedFriendRequest, chatRoom };
         });
     }
 
-    /**
-     * Declines a friend request.
-     * @param friendRequestId - ID of the friend request to decline.
-     * @returns The declined Friend entity.
-     */
     static async declineFriendRequest(friendRequestId: number): Promise<Friend> {
         const friendRequest = await friendRepository.findOne({
             where: { id: friendRequestId },
@@ -113,12 +95,6 @@ class FriendService {
         return friendRequest;
     }
 
-    /**
-     * Blocks a user.
-     * @param requesterId - ID of the user performing the block.
-     * @param userIdToBlock - ID of the user to be blocked.
-     * @returns The updated or newly created Friend entity with status BLOCKED.
-     */
     static async blockUser(requesterId: number, userIdToBlock: number): Promise<Friend> {
         if (requesterId === userIdToBlock) {
             throw new Error("You cannot block yourself.");
@@ -154,11 +130,6 @@ class FriendService {
         return await friendRepository.save(friendRelation);
     }
 
-    /**
-     * Retrieves all friends of the authenticated user.
-     * @param userId - ID of the authenticated user.
-     * @returns An array of User entities representing friends.
-     */
     static async getFriends(userId: number): Promise<User[]> {
         const friendRelations = await friendRepository.find({
             where: [
@@ -175,11 +146,6 @@ class FriendService {
         return friends;
     }
 
-    /**
-     * Retrieves all received friend requests for the authenticated user.
-     * @param userId - ID of the authenticated user.
-     * @returns An array of Friend entities representing received friend requests.
-     */
     static async getReceivedFriendRequests(userId: number): Promise<Friend[]> {
         const receivedRequests = await friendRepository.find({
             where: {

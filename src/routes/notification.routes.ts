@@ -5,9 +5,9 @@ import { Authenticate } from "../middlewares/authentication.middlewares";
 
 const router = Router();
 
-router.post("/notifications", NotificationController.createNotification);
-router.get("/notifications", Authenticate, NotificationController.getNotificationsForUser);
-router.post("/notifications/:notificationId/read", Authenticate, NotificationController.markAsRead);
-router.post("/notifications/read-all", Authenticate, NotificationController.markAllAsReadForUser);
+router.post("/", NotificationController.createNotification);
+router.get("/", Authenticate, NotificationController.getNotificationsForUser);
+router.post("//:notificationId/read", Authenticate, NotificationController.markAsRead);
+router.post("/read-all", Authenticate, NotificationController.markAllAsReadForUser);
 
 export default router;

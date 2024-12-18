@@ -8,10 +8,6 @@ interface AuthenticatedRequest extends Request {
 }
 
 class FriendController {
-    /**
-     * Handles sending a friend request.
-     * Route: POST /friends/request
-     */
     static async sendFriendRequest(req: Request, res: Response): Promise<void> {
         try {
             const { id: requesterId } = (req as AuthenticatedRequest).user;
@@ -23,6 +19,7 @@ class FriendController {
             }
 
             const friendRequest = await FriendService.sendFriendRequest(requesterId, receiverId);
+            
             logger.info(`User ID ${requesterId} sent a friend request to user ID ${receiverId}.`);
             res.status(201).json(friendRequest);
         } catch (error: any) {

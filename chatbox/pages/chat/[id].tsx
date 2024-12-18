@@ -38,7 +38,6 @@ const ChatRoomPage = () => {
             try {
                 const data = await fetchChatRoom(id);
                 if (data) {
-                    // data is assumed to be the messages since your code indicates that.
                     setMessages(data);
                     setChatRoom({
                         id: parseInt(id, 10),
@@ -114,9 +113,6 @@ const ChatRoomPage = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            
-            // const newSentMessage = response.data as ChatMessage;
-            // setMessages((prev) => [...prev, newSentMessage]);
 
             setNewMessage('');
             setImages([]);

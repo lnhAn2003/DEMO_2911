@@ -3,7 +3,6 @@ import { AppDataSource } from "../data-source";
 import { ChatRoom, ChatRoomType } from "../entities/ChatRoom";
 import { ChatMessage } from "../entities/ChatMessage";
 import { User } from "../entities/User";
-import logger from "../utils/logger";
 import { Brackets, In } from "typeorm";
 
 const userRepository = AppDataSource.getRepository(User);
@@ -43,7 +42,6 @@ class ChatService {
   }
 
   static async createOrGetDirectChatRoom(userId1: number, userId2: number): Promise<ChatRoom> {
-    // Check if a direct chat room already exists between these users
     const existingChatRoom = await chatRoomRepository.findOne({
       where: {
         type: ChatRoomType.DIRECT,
@@ -59,7 +57,6 @@ class ChatService {
       }
     }
 
-    // Create a new direct chat room
     const user1 = await userRepository.findOne({ where: { id: userId1 } });
     const user2 = await userRepository.findOne({ where: { id: userId2 } });
 

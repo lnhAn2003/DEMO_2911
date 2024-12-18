@@ -97,15 +97,12 @@ export class UserController {
                 imageUrl = file.location;
             }
     
-            // Prepare update data from req.body
             const updateData: Partial<User> = { ...req.body };
     
-            // Remove 'avatar' field if it exists in req.body, since it's not a column in User
             if ('avatar' in updateData) {
                 delete (updateData as any).avatar;
             }
     
-            // If we uploaded a file, set the profileImageUrl
             if (imageUrl) {
                 updateData.profileImageUrl = imageUrl;
             }
@@ -124,8 +121,6 @@ export class UserController {
         }
     }
     
-    
-
     static async deleteUser(req: Request, res: Response): Promise<void> {
         try {
             const { id } = req.params;

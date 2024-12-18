@@ -1,15 +1,22 @@
 // src/components/ChatMessage.tsx
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { ChatMessageProps } from '../types/Entities';
+import { AuthContext } from '@/context/AuthContext';
 
 const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message, onClick }) => {
-  const currentUserId = 1; // Replace this with your actual auth user ID
-  const isCurrentUser = message.sender.id === currentUserId;
+  const authContext = useContext(AuthContext);
+
+  if (!authContext) {
+    return null; 
+  }
+
+  const { user } = authContext;
+  const isCurrentUser = user?.id === message.sender.id;
 
   return (
-    <div className={`w-full flex ${isCurrentUser ? 'justify-start' : 'justify-end'} mb-4`} onClick={onClick}>
-      {isCurrentUser && (
+    <div className={`w-full flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`} onClick={onClick}>
+      {!isCurrentUser && (
         <img
           src={message.sender.profileImageUrl || '/default-avatar.png'}
           alt="Sender Avatar"
@@ -19,14 +26,17 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message, onClick }) 
 
       <div
         className={`max-w-sm p-3 rounded shadow hover:shadow-md transition cursor-pointer ${
-          isCurrentUser ? 'bg-blue-200 text-left' : 'bg-gray-200 text-right'
+          isCurrentUser ? 'bg-blue-200 text-right' : 'bg-gray-200 text-left'
         }`}
       >
         {/* Sender Info */}
-        <div className="mb-1">
+        {!isCurrentUser && (
+          <div className="mb-1">
           <p className="font-semibold text-gray-800">{message.sender.name}</p>
-          <p className="text-xs text-gray-500">{new Date(message.createdAt).toLocaleString()}</p>
+          {/* <p className="text-xs text-gray-500">{new Date(message.createdAt).toLocaleString()}</p> */}
         </div>
+        )}
+        
 
         {/* Message Content */}
         <p className="mt-1 break-words text-gray-800">{message.content}</p>
@@ -60,7 +70,7 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message, onClick }) 
         )}
       </div>
 
-      {!isCurrentUser && (
+      {isCurrentUser && (
         <img
           src={message.sender.profileImageUrl || '/default-avatar.png'}
           alt="Sender Avatar"
