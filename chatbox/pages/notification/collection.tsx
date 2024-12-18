@@ -8,16 +8,12 @@ const NotificationCollection: React.FC = () => {
   const { notifications, isLoading, isError, mutate } = useNotifications();
   const [expandedNotificationId, setExpandedNotificationId] = useState<number | null>(null);
 
-  const toggleReadStatus = async (notificationId: number, isRead: boolean) => {
+  const handleMarkAsRead = async (notificationId: number) => {
     try {
-      if (!isRead) {
-        await axiosInstance.post(`/notifications/${notificationId}/read`);
-      } else {
-        console.log('Currently, unread toggle logic is not supported by the backend');
-      }
-      mutate(); // Refresh the notification list
+      await axiosInstance.post(`/notifications/${notificationId}/read`);
+      mutate();
     } catch (error) {
-      console.error('Failed to toggle notification read status:', error);
+      console.error('Failed to mark notification as read:', error);
     }
   };
 
@@ -60,18 +56,14 @@ const NotificationCollection: React.FC = () => {
                   {new Date(notification.createdAt).toLocaleString()}
                 </span>
               </div>
-              <button
-                className={`text-sm ${
-                  notification.isRead
-                    ? 'text-gray-500 hover:text-red-500'
-                    : 'text-blue-500 hover:text-blue-700'
-                }`}
-                onClick={() =>
-                  toggleReadStatus(notification.id, notification.isRead)
-                }
-              >
-                {notification.isRead ? 'Mark as Unread' : 'Mark as Read'}
-              </button>
+              {!notification.isRead && (
+                <button
+                  className="text-sm text-blue-500 hover:text-blue-700"
+                  onClick={() => handleMarkAsRead(notification.id)}
+                >
+                  Mark as Read
+                </button>
+              )}
             </div>
             {expandedNotificationId === notification.id && (
               <div className="mt-4 text-sm text-gray-700">
