@@ -1,8 +1,6 @@
-// src/components/ChatMessage.tsx
-
 import React, { useContext } from 'react';
-import { ChatMessageProps } from '../types/Entities';
-import { AuthContext } from '@/context/AuthContext';
+import { ChatMessageProps } from '../../../src/types/Entities';
+import { AuthContext } from '../../../src/context/AuthContext';
 
 const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message, onClick }) => {
   const authContext = useContext(AuthContext);
@@ -15,31 +13,39 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message, onClick }) 
   const isCurrentUser = user?.id === message.sender.id;
 
   return (
-    <div className={`w-full flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`} onClick={onClick}>
+    <div
+      className={`w-full flex pt-3 ${
+        isCurrentUser ? 'justify-end' : 'justify-start'
+      } items-start mb-4`}
+      onClick={onClick}
+    >
       {!isCurrentUser && (
         <img
           src={message.sender.profileImageUrl || '/default-avatar.png'}
           alt="Sender Avatar"
-          className="w-8 h-8 rounded-full object-cover mr-2 self-end"
+          className="w-10 h-10 rounded-full object-cover mr-2 self-start"
         />
       )}
 
       <div
-        className={`max-w-sm p-3 rounded shadow hover:shadow-md transition cursor-pointer ${
-          isCurrentUser ? 'bg-blue-200 text-right' : 'bg-gray-200 text-left'
+        className={`relative max-w-sm p-3 pt-0 rounded shadow hover:shadow-md transition cursor-pointer ${
+          isCurrentUser ? 'bg-blue-200 text-left' : 'bg-purple-200 text-left'
         }`}
       >
         {/* Sender Info */}
         {!isCurrentUser && (
-          <div className="mb-1">
-          <p className="font-semibold text-gray-800">{message.sender.name}</p>
-          {/* <p className="text-xs text-gray-500">{new Date(message.createdAt).toLocaleString()}</p> */}
-        </div>
+          <div className="absolute top-0 left-0 -translate-y-full">
+            <p className="font-semibold text-gray-800">{message.sender.name}</p>
+          </div>
         )}
-        
 
         {/* Message Content */}
-        <p className="mt-1 break-words text-gray-800">{message.content}</p>
+        <p
+          style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
+          className="mt-1 break-words text-gray-800"
+        >
+          {message.content}
+        </p>
 
         {/* Render Images */}
         {message.imagesURL && message.imagesURL.length > 0 && (
@@ -74,7 +80,7 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message, onClick }) 
         <img
           src={message.sender.profileImageUrl || '/default-avatar.png'}
           alt="Sender Avatar"
-          className="w-8 h-8 rounded-full object-cover ml-2 self-end"
+          className="w-10 h-10 rounded-full object-cover ml-2 self-start"
         />
       )}
     </div>

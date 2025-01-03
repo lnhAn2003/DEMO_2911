@@ -100,7 +100,6 @@ class ChatController {
             const { id: senderId } = (req as AuthenticatedRequest).user;
             const { content } = req.body;
 
-            // Files from S3 upload
             const files = req.files as { [fieldname: string]: Express.MulterS3.File[] };
             let imagesURL: string[] | undefined;
             let fileURL: string | undefined;
@@ -123,7 +122,7 @@ class ChatController {
 
             logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
 
-            // Emit 'newMessage' via Socket.io
+            
             const io = req.app.get("io");
             io.to(`chatroom_${chatRoomId}`).emit("newMessage", message);
 
@@ -133,6 +132,19 @@ class ChatController {
             res.status(500).json({ message: error.message });
         }
     }
+
+    static async deleteMessage(req: Request, res: Response): Promise<void> {
+        try {
+            const { messageId } = req.body;
+            await ChatService.deleteMessage(messageId);
+            logger.info(`A message have been removed`);
+            res.status(201).json("User have delete message");
+        } catch (error: any) {
+            logger.error(`Error delete message`);
+            res.status(500).json({ message: error.message });
+        }
+    }
+
 }
 
 export default ChatController;

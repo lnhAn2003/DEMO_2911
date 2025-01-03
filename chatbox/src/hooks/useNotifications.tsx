@@ -1,3 +1,5 @@
+// src/hooks/useNotifications.ts
+
 import useSWR from 'swr';
 import axiosInstance from '../utils/axiosInstance';
 import { Notification } from '../types/Entities';
@@ -14,12 +16,17 @@ const useNotifications = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on('new_notification', () => {
+      socket.on('newNotification', () => { 
+        mutate();
+      });
+
+      socket.on('newFriendRequest', () => {
         mutate();
       });
 
       return () => {
-        socket.off('new_notification');
+        socket.off('newNotification');
+        socket.off('newFriendRequest');
       };
     }
   }, [socket, mutate]);

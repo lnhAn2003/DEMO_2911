@@ -1,5 +1,5 @@
 // src/entities/User.ts
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany, JoinTable } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany } from "typeorm";
 import { ChatRoom } from './ChatRoom';
 import { ChatMessage } from './ChatMessage';
 import { Friend } from "./Friend";
@@ -38,7 +38,6 @@ export class User {
 
     @OneToMany(() => Friend, (friend) => friend.receiver)
     receivedFriendRequests!: Friend[];
-
 
     @OneToMany(() => Notification, (notification) => notification.receiver)
     notifications!: Notification[];

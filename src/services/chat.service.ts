@@ -166,6 +166,31 @@ class ChatService {
 
     return message || null;
   }
+
+  static async deleteMessage(messageId: number): Promise<ChatMessage | null> {
+    const deleteMessage = await chatMessageRepository.findOne({
+      where: {id: messageId}
+    })
+
+    if (!deleteMessage) {
+      throw new Error("Message not found.");
+    } else {
+      await chatMessageRepository
+        .createQueryBuilder("chatMessage")
+        .update(deleteMessage)
+        .set({
+            isDeleted: true,
+            content: "This message have been removed !",
+            imagesURL: [],
+            fileURL: "",
+            updatedAt: new Date(),
+        })
+        .where("id = :id", {id: messageId})
+        .execute()
+    }
+
+    return null;
+  }
 }
 
 export default ChatService;

@@ -4,53 +4,70 @@ import { Friend, FriendStatus } from "../entities/Friend";
 import { User } from "../entities/User";
 import ChatService from "./chat.service";
 import { Repository } from "typeorm";
+import { NotificationType } from "../entities/Notification";
+import logger from "../utils/logger";
+import NotificationService from "./notification.service";
 
 const friendRepository: Repository<Friend> = AppDataSource.getRepository(Friend);
 const userRepository: Repository<User> = AppDataSource.getRepository(User);
 
 class FriendService {
     static async sendFriendRequest(requesterId: number, receiverId: number): Promise<Friend> {
-        if (requesterId === receiverId) {
-            throw new Error("You cannot send a friend request to yourself.");
-        }
-
-        const [requester, receiver] = await Promise.all([
-            userRepository.findOne({ where: { id: requesterId } }),
-            userRepository.findOne({ where: { id: receiverId } }),
-        ]);
-
-        if (!requester) {
-            throw new Error("Requester not found.");
-        }
-
-        if (!receiver) {
-            throw new Error("Receiver not found.");
-        }
-
-        const existingRequest = await friendRepository.findOne({
-            where: [
-                { requester: { id: requesterId }, receiver: { id: receiverId } },
-                { requester: { id: receiverId }, receiver: { id: requesterId } },
-            ],
-        });
-
-        if (existingRequest) {
-            if (existingRequest.status === FriendStatus.PENDING) {
-                throw new Error("A friend request is already pending between these users.");
-            } else if (existingRequest.status === FriendStatus.ACCEPTED) {
-                throw new Error("Users are already friends.");
-            } else if (existingRequest.status === FriendStatus.BLOCKED) {
-                throw new Error("You have blocked this user.");
+        return await AppDataSource.transaction(async (transactionalEntityManager) => {
+            if (requesterId === receiverId) {
+                throw new Error("You cannot send a friend request to yourself.");
             }
-        }
 
-        const friendRequest = friendRepository.create({
-            requester,
-            receiver,
-            status: FriendStatus.PENDING,
+            const [requester, receiver] = await Promise.all([
+                transactionalEntityManager.findOne(User, { where: { id: requesterId } }),
+                transactionalEntityManager.findOne(User, { where: { id: receiverId } }),
+            ]);
+
+            if (!requester) {
+                throw new Error("Requester not found.");
+            }
+
+            if (!receiver) {
+                throw new Error("Receiver not found.");
+            }
+
+            const existingRequest = await transactionalEntityManager.findOne(Friend, {
+                where: [
+                    { requester: { id: requesterId }, receiver: { id: receiverId } },
+                    { requester: { id: receiverId }, receiver: { id: requesterId } },
+                ],
+                relations: ["requester", "receiver"],
+            });
+
+            if (existingRequest) {
+                if (existingRequest.status === FriendStatus.PENDING) {
+                    throw new Error("A friend request is already pending between these users.");
+                } else if (existingRequest.status === FriendStatus.ACCEPTED) {
+                    throw new Error("Users are already friends.");
+                } else if (existingRequest.status === FriendStatus.BLOCKED) {
+                    throw new Error("You have blocked this user.");
+                }
+            }
+
+            const friendRequest = friendRepository.create({
+                requester,
+                receiver,
+                status: FriendStatus.PENDING,
+            });
+
+            const savedFriendRequest = await transactionalEntityManager.save(friendRequest);
+            logger.info(`Friend request saved: ${JSON.stringify(savedFriendRequest)}`);
+
+            const notification = await NotificationService.createNotification(
+                receiver.id,
+                NotificationType.FRIEND_REQUEST_RECEIVED,
+                requester.id,
+                `You have a new friend request from ${requester.email}`
+            );
+            logger.info(`Notification created: ${JSON.stringify(notification)}`);
+
+            return savedFriendRequest;
         });
-
-        return await friendRepository.save(friendRequest);
     }
 
     static async acceptFriendRequest(friendRequestId: number): Promise<{ friend: Friend; chatRoom: any }> {
@@ -70,12 +87,24 @@ class FriendService {
 
             friendRequest.status = FriendStatus.ACCEPTED;
             const updatedFriendRequest = await transactionalEntityManager.save(friendRequest);
+            logger.info(`Friend request accepted: ${JSON.stringify(updatedFriendRequest)}`);
 
             const chatRoom = await ChatService.createOrGetDirectChatRoom(friendRequest.requester.id, friendRequest.receiver.id);
+            logger.info(`Chat room created or retrieved: ${JSON.stringify(chatRoom)}`);
+
+            const notification = await NotificationService.createNotification(
+                friendRequest.requester.id,
+                NotificationType.FRIEND_REQUEST_ACCEPTED,
+                friendRequest.receiver.id,
+                `${friendRequest.receiver.email} has accepted your friend request.`,
+                chatRoom.id
+            );
+            logger.info(`Notification for accepted request created: ${JSON.stringify(notification)}`);
 
             return { friend: updatedFriendRequest, chatRoom };
         });
     }
+
 
     static async declineFriendRequest(friendRequestId: number): Promise<Friend> {
         const friendRequest = await friendRepository.findOne({

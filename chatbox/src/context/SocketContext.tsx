@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { AuthContext } from './AuthContext';
-import { ChatMessage } from '../types/Entities';
 
 interface SocketContextType {
     socket: Socket | null;

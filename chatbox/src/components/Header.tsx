@@ -1,4 +1,5 @@
 // src/components/Header.tsx
+
 import React, { useState } from 'react';
 import Link from 'next/link';
 import useAuth from '../hooks/useAuth';
@@ -114,9 +115,18 @@ const Header: React.FC = () => {
                             key={notif.id}
                             className={`px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer ${!notif.isRead ? 'font-semibold bg-gray-50' : ''
                               }`}
-                            onClick={() => handleMarkAsRead(notif.id)}
+                            onClick={() => {
+                              if (!notif.isRead) {
+                                handleMarkAsRead(notif.id);
+                              }
+                            }}
                           >
-                            {notif.message}
+                            <div className="flex justify-between items-center">
+                              <span>{notif.message}</span>
+                              {!notif.isRead && (
+                                <span className="ml-2 text-xs text-blue-500">New</span>
+                              )}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -126,7 +136,7 @@ const Header: React.FC = () => {
                       )
                     )}
                     <div className="border-t border-gray-200">
-                      <Link href="/notification/collection" className="text-blue-600 hover:underline">
+                      <Link href="/notification/collection" className="block px-4 py-2 text-sm text-blue-600 hover:underline">
                         View All Notifications
                       </Link>
                     </div>

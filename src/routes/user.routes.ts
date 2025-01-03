@@ -1,5 +1,4 @@
 // src/routes/user.routes.ts
-
 import { UserController } from "../controllers/user.controller";
 import { Router } from "express";
 import { Authenticate } from "../middlewares/authentication.middlewares";

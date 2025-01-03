@@ -25,7 +25,6 @@ class FriendController {
         } catch (error: any) {
             logger.error(`Error sending friend request: ${error.message}`);
 
-            // Determine error type to send appropriate status code
             if (error.message.includes("cannot send a friend request to yourself")) {
                 res.status(400).json({ message: error.message });
             } else if (error.message.includes("already")) {
@@ -38,10 +37,6 @@ class FriendController {
         }
     }
 
-    /**
-     * Handles accepting a friend request.
-     * Route: POST /friends/:friendRequestId/accept
-     */
     static async acceptFriendRequest(req: Request, res: Response): Promise<void> {
         try {
             const { friendRequestId } = req.params;
@@ -60,10 +55,6 @@ class FriendController {
         }
     }
 
-    /**
-     * Handles declining a friend request.
-     * Route: POST /friends/:friendRequestId/decline
-     */
     static async declineFriendRequest(req: Request, res: Response): Promise<void> {
         try {
             const { friendRequestId } = req.params;
@@ -104,10 +95,6 @@ class FriendController {
         }
     }
 
-    /**
-     * Retrieves the list of friends for the authenticated user.
-     * Route: GET /friends/
-     */
     static async getFriends(req: Request, res: Response): Promise<void> {
         try {
             const { id: userId } = (req as AuthenticatedRequest).user;
@@ -120,10 +107,6 @@ class FriendController {
         }
     }
 
-    /**
-     * Retrieves received friend requests for the authenticated user.
-     * Route: GET /friends/received
-     */
     static async getReceivedFriendRequests(req: Request, res: Response): Promise<void> {
         try {
             const { id: userId } = (req as AuthenticatedRequest).user;
