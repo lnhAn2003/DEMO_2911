@@ -17,6 +17,9 @@ export class ChatMessage {
     @Column({ nullable: true })
     fileURL?: string;
 
+    @Column({ nullable: true })
+    isDeleted?: boolean;
+
     @ManyToOne(() => User, (user) => user.chatMessages, { eager: true })
     @JoinColumn({ name: 'sender_id' })
     sender!: User;

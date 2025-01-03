@@ -7,10 +7,9 @@ import logger from "./utils/logger";
 import { User } from "./entities/User";
 import { ChatRoom } from "./entities/ChatRoom";
 import FriendService from "./services/friend.service";
-import { NotificationType } from "./entities/Notification";
 
 export function initializeSocketIO(httpServer: HttpServer) {
-    const allowedOrigins = ["http://localhost:3000"]; // Update with your frontend's origin
+    const allowedOrigins = ["http://localhost:3000"]; 
     const io = new Server(httpServer, {
         cors: {
             origin: allowedOrigins,
@@ -53,6 +52,7 @@ export function initializeSocketIO(httpServer: HttpServer) {
         }
     });
 
+    const typingUsers = new Map<string, Set<string>>();
     io.on("connection", (socket) => {
         const user = (socket as any).user as User;
         logger.info(`User connected: ${user.email}`);
@@ -62,9 +62,25 @@ export function initializeSocketIO(httpServer: HttpServer) {
 
         user.chatRooms.forEach((chatRoom: ChatRoom) => {
             socket.join(`chatroom_${chatRoom.id}`);
+            logger.info(`User ${user.email} chatRooms: ${user.chatRooms.map(r => r.id)}`);
             logger.info(`User ${user.email} joined chat room: chatroom_${chatRoom.id}`);
         });
 
+        socket.on("typing", ({ roomId, userName }) => {
+            if (!typingUsers.has(roomId)) {
+                typingUsers.set(roomId, new Set());
+            }
+
+            typingUsers.get(roomId)?.add(userName);
+            console.log("Typing users set:", [...typingUsers.get(roomId)!]);
+            io.to(`chatroom_${roomId}`).emit("updateTypingUsers", [...typingUsers.get(roomId)!]);
+            console.log("SERVER: Received typing from", userName, "in room", roomId);
+        });
+    
+        socket.on("stopTyping", ({ roomId, userName }) => {
+            typingUsers.get(roomId)?.delete(userName);
+            io.to(`chatroom_${roomId}`).emit("updateTypingUsers", [...typingUsers.get(roomId)!]);
+        });
 
         socket.on("sendFriendRequest", async (data: { receiverId: number }) => {
             try {
@@ -86,6 +102,10 @@ export function initializeSocketIO(httpServer: HttpServer) {
                 socket.emit("error", { message: error.message });
             }
         });
+
+        socket.on("updateTypingUsers", (data) => {
+
+        })
 
         socket.on("disconnect", () => {
             logger.info(`User disconnected: ${user.email}`);

@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer utilities {
+    @keyframes dotTyping {
+      0%, 100% { transform: translateY(0); opacity: 0.4; }
+      50%      { transform: translateY(-6px); opacity: 1; }
+    }
+    .typing-dot {
+      @apply inline-block w-[6px] h-[6px] bg-gray-600 rounded-full mx-[2px] opacity-40;
+      animation: dotTyping 1s infinite;
+    }
+    .typing-dot-2 {
+      animation-delay: 0.2s;
+    }
+    .typing-dot-3 {
+      animation-delay: 0.4s;
+    }
+  }
+  
