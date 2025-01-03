@@ -122,7 +122,6 @@ class ChatController {
 
             logger.info(`User ID ${senderId} sent a message to chat room ID ${chatRoomId}`);
 
-            
             const io = req.app.get("io");
             io.to(`chatroom_${chatRoomId}`).emit("newMessage", message);
 
@@ -136,9 +135,28 @@ class ChatController {
     static async deleteMessage(req: Request, res: Response): Promise<void> {
         try {
             const { messageId } = req.body;
-            await ChatService.deleteMessage(messageId);
+            const deleteMessageId = parseInt(messageId, 10);
+
+            if (isNaN(deleteMessageId)) {
+                res.status(400).json({ message: "Invalid message ID" });
+                return;
+            }
+
+            const message = await ChatService.getMessageById(deleteMessageId);
+            if (!message) {
+                res.status(404).json({ message: "Message not found" });
+            }
+
+            const chatRoomId = message?.chatRoom.id;
+
+            await ChatService.deleteMessage(deleteMessageId);
             logger.info(`A message have been removed`);
+
+            const io = req.app.get("io");
+            io.to(`chatroom_${chatRoomId}`).emit("deleteMessage", deleteMessageId);
+
             res.status(201).json("User have delete message");
+            logger.info(`Message ID ${deleteMessageId} has been removed from chat room ${chatRoomId}`);
         } catch (error: any) {
             logger.error(`Error delete message`);
             res.status(500).json({ message: error.message });

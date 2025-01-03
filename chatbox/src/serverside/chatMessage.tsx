@@ -14,3 +14,17 @@ export const fetchChatMessage = async (chatRoomId: string, messageId: string) : 
         return null;
     }
 };
+
+export const deleteChatMessage = async (messageId: string) : Promise<boolean> => {
+    try {
+        const response = await axiosInstance.patch('/chats/delete', {
+            messageId: messageId,
+        })
+
+        console.log('Resource deleted successfully:', response.data);
+        return true;
+      } catch (error: any) {
+        console.error('Error deleting message:', error.response?.data || error.message);
+        return false;
+      }
+}

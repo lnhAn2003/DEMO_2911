@@ -167,6 +167,13 @@ class ChatService {
     return message || null;
   }
 
+  static async getMessageById(messageId: number): Promise<ChatMessage | null> {
+    return chatMessageRepository.findOne({
+      where: { id: messageId },
+      relations: ["chatRoom"], 
+    });
+  }
+
   static async deleteMessage(messageId: number): Promise<ChatMessage | null> {
     const deleteMessage = await chatMessageRepository.findOne({
       where: {id: messageId}
